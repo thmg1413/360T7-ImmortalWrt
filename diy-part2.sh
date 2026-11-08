@@ -42,3 +42,23 @@ PYTHON
 
 # Modify hostname
 #sed -i 's/OpenWrt/360T7/g' package/base-files/files/bin/config_generate
+
+# ---------------------------------------------------------
+# PassWall 新版内核适配
+# sing-box 1.14.4、geoview 0.2.9 的 go.mod 要求 Go >= 1.25，
+# 而本源码树自带 Go 1.23.12（构建时报
+# "go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)"）。
+# 打开 GOTOOLCHAIN=auto，让 go 自动拉取 go.mod 要求的工具链。
+# ---------------------------------------------------------
+GOLANG_PKG_MK="feeds/packages/lang/golang/golang-package.mk"
+if [ -f "$GOLANG_PKG_MK" ]; then
+  sed -i 's/^\([[:space:]]*\)GOTOOLCHAIN=local[[:space:]]*$/\1GOTOOLCHAIN=auto/' "$GOLANG_PKG_MK"
+  if ! grep -q 'GOTOOLCHAIN=auto' "$GOLANG_PKG_MK"; then
+    echo "ERROR: failed to patch GOTOOLCHAIN in $GOLANG_PKG_MK" >&2
+    exit 1
+  fi
+  echo "GOTOOLCHAIN=auto patched for PassWall kernels"
+else
+  echo "ERROR: $GOLANG_PKG_MK not found" >&2
+  exit 1
+fi
